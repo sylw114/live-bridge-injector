@@ -1,0 +1,29 @@
+# Operating systems
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+dist/
+build/
+
+# Logs and temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+*.tmp
+*.swp
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-*
+
+# Test/coverage
+coverage/
+*.lcov
