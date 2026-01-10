@@ -10,8 +10,7 @@ function sendMsg(msg: Danmu | Gift | Jian | ComboGifts | SuperChat | GiftBox) {
 }
 
 type Gift = { type: "gift", gift: string, giftCount: number, userName: string }
-type ComboGifts = { type: 'giftCombo', userName: string, combo?: number, giftName: string, fansMedal?: { level: number, name: string } } |
-{ type: 'giftCombo', userName: string, total?: number, giftName: string, fansMedal?: { level: number, name: string } }
+type ComboGifts = ({ count: number } | { totalCount: number }) & { type: 'giftCombo'; userName: string; giftName: string; fansMedal?: { level: number; name: string } }
 type GiftBox = { type: 'giftBox', boxName: string, userName: string, fansMedal?: { level: number, name: string }, giftName: string, giftCount: number }
 type Message = ({ type: "text", text: string } | { type: "img", url: string, name?: string })[]
 type Danmu = { type: 'danmu', username: string, message: Message, fansMedal?: { level: number, name: string } }
@@ -165,11 +164,16 @@ function main() {
             const gift = giftName.innerText
             const user = username.innerText
             const Count = count ? +(/\d/.exec(count.innerText) ?? 1) : +(/\d/.exec(totalCount.innerText) ?? 1)
-            const data: ComboGifts = {
+            const data: ComboGifts = count?{
               type: 'giftCombo',
               userName: user,
               giftName: gift,
-              [count ? 'count' : 'totalCount']: Count
+              count: Count
+            } : {
+              type: 'giftCombo',
+              userName: user,
+              giftName: gift,
+              totalCount: Count
             }
             if (fansMedal) {
               data.fansMedal = {
