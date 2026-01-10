@@ -9,17 +9,12 @@ function sendMsg(msg: Danmu | Gift | Jian | ComboGifts | SuperChat | GiftBox) {
   fetch(serverUrl, { method: 'POST', body: str, headers: { 'Content-Type': 'application/json' } })
 }
 
-type UserAction = "进入直播间" | "光临直播间" | "为主播点赞了"
-type FansMedalLevel = `${number}`
-type FansMedalName = string
-type UserName = string
 type Gift = { type: "gift", gift: string, giftCount: number, userName: string }
 type ComboGifts = { type: 'giftCombo', userName: string, combo?: number, giftName: string, fansMedal?: { level: number, name: string } } |
 { type: 'giftCombo', userName: string, total?: number, giftName: string, fansMedal?: { level: number, name: string } }
 type GiftBox = { type: 'giftBox', boxName: string, userName: string, fansMedal?: { level: number, name: string }, giftName: string, giftCount: number }
 type Message = ({ type: "text", text: string } | { type: "img", url: string, name?: string })[]
-type Danmu = { type: 'danmu', username: UserName, message: Message, fansMedal?: { level: number, name: string } }
-type User = [`${string} :`] | [string, `${number}`, `${string} :`]
+type Danmu = { type: 'danmu', username: string, message: Message, fansMedal?: { level: number, name: string } }
 type Jian = { type: 'captain', userName: string }
 type SuperChat = { type: 'superChat', userName: string, price: number, message: string }
 enum logLevel {
@@ -195,7 +190,7 @@ function main() {
             fault([node.innerHTML, 3])
             continue
           }
-          const texts = userNode.innerText.split('\n') as User
+          const texts = userNode.innerText.split('\n')
           const danmu: Danmu = { type: 'danmu', username: texts[texts.length - 1].slice(0, -2), message: [] }
           if (texts.length === 3) {
             danmu.fansMedal = { level: +texts[1], name: texts[0] }
