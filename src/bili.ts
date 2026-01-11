@@ -92,7 +92,7 @@ function main() {
             type: "gift",
             gift: texts[2],
             userName: texts[0],
-            giftCount: +(/\d/.exec(texts[3])?.[0] ?? 0),
+            giftCount: +(/\d+/.exec(texts[3])?.[0] ?? 1),
           }
           sendMsg(gift)
         }
@@ -102,16 +102,18 @@ function main() {
   const observer = new MutationObserver(callback)
   observer.observe(giftsPrompt, config);
 
+
+
   const danmu = document.getElementById("chat-items")!
   const danmuCallback: MutationCallback = function (mutationsList) {
     for (const mutation of mutationsList) {
       if (mutation.type === "childList") {
         for (const node of Array.from(mutation.addedNodes)) {  // 将 NodeList 转换为数组
-          if (node.nodeType !== Node.ELEMENT_NODE) { fault([node.nodeName + node.nodeType, -1]); continue }
-          if (!(node instanceof HTMLElement)) { fault([node.nodeName + node.nodeType, -1]); continue }
+          if (node.nodeType !== Node.ELEMENT_NODE) { fault([(node as HTMLElement).outerHTML + (node as HTMLElement).innerHTML + node.nodeType, -1]); continue }
+          if (!(node instanceof HTMLElement)) { fault([(node as HTMLElement).outerHTML + (node as HTMLElement).innerHTML + node.nodeType, -1]); continue }
           if (/superChat/.test(node.className)) {
             const child = node.children as HTMLCollectionOf<HTMLDivElement>;
-            const price = +/(\d)/.exec(child[0].innerText)![0] / 10;
+            const price = +/(\d+)/.exec(child[0].innerText)![0] / 10;
             const uname = child[1].innerText;
             const text = child[2].innerText;
             const data: SuperChat = {
@@ -150,26 +152,42 @@ function main() {
               sendMsg(data)
               continue
             }
-            const count = arr.find(node => /gift-count/.test(node.className))!
-            const totalCount = arr.find(node => /gift-total-count/.test(node.className))!
             const giftName = arr.find(node => /gift-name/.test(node.className) && node.innerText !== 'TA冠名的礼物') as HTMLSpanElement
-
-            if (!giftName || !username || !action || !(action instanceof HTMLElement) || !/投喂/.test(action.innerText) || (!count && !totalCount)) {
-              fault([node.innerHTML, -2]);
-              continue
-            }
             const fans = fansMedal?.innerText?.split('\n') ?? []
             const medalName = fans[0]
             const fansLevel = +fans[1]
             const gift = giftName.innerText
             const user = username.innerText
-            const Count = count ? +(/\d/.exec(count.innerText) ?? 1) : +(/\d/.exec(totalCount.innerText) ?? 1)
-            const data: ComboGifts = count?{
-              type: 'giftCombo',
-              userName: user,
-              giftName: gift,
-              count: Count
-            } : {
+            const c = arr.find(node => /(gift-count|gift-num)/.test(node.className) && node.innerText.length > 1)
+            if (c) {
+              
+              const data: ComboGifts = {
+                type: 'giftCombo',
+                userName: user,
+                giftName: gift,
+                count: +/\d+/.exec(c.innerText)!,
+              }
+              if (fansMedal) {
+                data.fansMedal = {
+                  name: medalName,
+                  level: fansLevel
+                }
+              }
+              sendMsg(data)
+              continue
+            }
+            // const count = arr.find(node => /gift-count/.test(node.className))!
+            const totalCount = arr.find(node => /gift-total-count/.test(node.className))!
+
+            if (!giftName || !username || !action || !(action instanceof HTMLElement) || !/投喂/.test(action.innerText)
+              || !totalCount
+              // || (!count && !totalCount)
+            ) {
+              fault([node.innerHTML, -2]);
+              continue
+            }
+            const Count = +(/\d+/.exec(totalCount.innerText) ?? 1)
+            const data: ComboGifts = {
               type: 'giftCombo',
               userName: user,
               giftName: gift,
