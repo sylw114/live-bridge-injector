@@ -125,7 +125,7 @@ function main() {
             sendMsg(data)
             continue
           }
-          if (node.children.length === 1 && node.children[0] instanceof HTMLDivElement && node.children[0].innerText === '可以点击他人的滚动弹幕进行@啦～') {
+          if (node.firstChild instanceof HTMLDivElement && node.firstChild.innerText === '超能用户' || node.children.length === 1 && node.children[0] instanceof HTMLDivElement && node.children[0].innerText === '可以点击他人的滚动弹幕进行@啦～') {
             continue
           }
           if (node.children.length !== 2) {
