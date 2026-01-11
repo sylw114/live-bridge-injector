@@ -10,8 +10,8 @@ function sendMsg(msg: Danmu | Gift | Jian | ComboGifts | SuperChat | GiftBox) {
 }
 
 type Gift = { type: "gift", gift: string, giftCount: number, userName: string }
-type ComboGifts = ({ count: number } | { totalCount: number }) & { type: 'giftCombo'; userName: string; giftName: string; fansMedal?: { level: number; name: string } }
-type GiftBox = { type: 'giftBox', boxName: string, userName: string, fansMedal?: { level: number, name: string }, giftName: string, giftCount: number }
+type ComboGifts = ({ count: number } | { totalCount: number }) & { type: 'giftCombo', userName: string, giftName: string, fansMedal?: { level: number, name: string } }
+type GiftBox = { type: 'giftBox', boxName: string, userName: string, giftName: string, giftCount: number }
 type Message = ({ type: "text", text: string } | { type: "img", url: string, name?: string })[]
 type Danmu = { type: 'danmu', username: string, message: Message, fansMedal?: { level: number, name: string } }
 type Jian = { type: 'captain', userName: string }
@@ -84,7 +84,7 @@ function parseNumber(root: HTMLDivElement){
 }
 
 function main() {
-  const config = { childList: true };
+  const config = { childList: true }
   //旧版处理底部礼物的数据 由于拒绝数据去重暂时注释掉
   // const giftsPrompt = document.getElementById("brush-prompt")!
   // const callback: MutationCallback = function (mutationsList) {
@@ -169,9 +169,9 @@ function main() {
 
       }
     }
-  };
-  const giftObserver = new MutationObserver(giftCallback);
-  giftObserver.observe(gift, { childList: true });
+  }
+  const giftObserver = new MutationObserver(giftCallback)
+  giftObserver.observe(gift, { childList: true })
 
 
   const danmu = document.getElementById("chat-items")!
@@ -182,10 +182,10 @@ function main() {
           if (node.nodeType !== Node.ELEMENT_NODE) { fault([(node as HTMLElement).outerHTML + node.nodeType, -1]); continue }
           if (!(node instanceof HTMLElement)) { fault([(node as HTMLElement).outerHTML + node.nodeType, -1]); continue }
           if (/superChat/.test(node.className)) {
-            const child = node.children as HTMLCollectionOf<HTMLDivElement>;
-            const price = +/(\d+)/.exec(child[0].innerText)![0] / 10;
-            const uname = (child[1].children[0].children[1] as HTMLDivElement).innerText;
-            const text = child[2].innerText;
+            const child = node.children as HTMLCollectionOf<HTMLDivElement>
+            const price = +/(\d+)/.exec(child[0].innerText)![0] / 10
+            const uname = (child[1].children[0].children[1] as HTMLDivElement).innerText
+            const text = child[2].innerText
             const data: SuperChat = {
               type: 'superChat',
               price,
@@ -241,7 +241,7 @@ function main() {
               || !totalCount
               // || (!count && !totalCount)
             ) {
-              fault([node.outerHTML, -2]);
+              fault([node.outerHTML, -2])
               continue
             }
             const fans = fansMedal?.innerText?.split('\n') ?? []
