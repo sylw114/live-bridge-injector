@@ -55,8 +55,9 @@ function parseContent(node: Node, type?: number): Message {
           const img = firstChild as HTMLImageElement
           message.push({ type: "img", url: img.src, name: img.alt })
         } else {
-          // 这是一个文本span
-          if (element.childNodes[0]?.nodeType !== Node.TEXT_NODE) fault([element.innerHTML, type ?? 0])
+          if(element.innerText === ''){
+            continue
+          }
           const text = element.textContent?.trim() ?? ''
           if (text) {
             message.push({ type: "text", text: text })
