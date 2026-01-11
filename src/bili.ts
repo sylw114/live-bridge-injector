@@ -125,6 +125,14 @@ function main() {
             sendMsg(data)
             continue
           }
+          if(/恭喜用户.*荣耀等级/.test(node.innerText)) continue
+          if(node.children.length === 1 && node.childNodes.length === 2 && node.childNodes[1].nodeType === Node.TEXT_NODE && /开通了舰长/.test(node.childNodes[1].textContent??'')){
+            const name = (node.children[0] as HTMLDivElement).innerText
+            sendMsg({
+              type: 'captain',
+              userName: name
+            })
+          }
           if (node.firstChild instanceof HTMLDivElement && node.firstChild.innerText === '超能用户' || node.children.length === 1 && node.children[0] instanceof HTMLDivElement && node.children[0].innerText === '可以点击他人的滚动弹幕进行@啦～') {
             continue
           }
@@ -205,10 +213,6 @@ function main() {
           const userNode = node.children[0]
           const dataNode = node.children[1]
           if (!(userNode instanceof HTMLElement) || !(dataNode instanceof HTMLElement)) {
-            if (dataNode.nodeType === Node.TEXT_NODE && userNode instanceof HTMLElement) {
-              if (!/舰长/.test(dataNode.textContent ?? '')) fault([node.innerHTML, 6])
-              sendMsg({ type: 'captain', userName: userNode.innerText })
-            }
             fault([node.innerHTML, 3])
             continue
           }
