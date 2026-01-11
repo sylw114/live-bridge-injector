@@ -55,7 +55,7 @@ function parseContent(node: Node, type?: number): Message {
           const img = firstChild as HTMLImageElement
           message.push({ type: "img", url: img.src, name: img.alt })
         } else {
-          if(element.innerText === ''){
+          if (element.innerText === '') {
             continue
           }
           const text = element.textContent?.trim() ?? ''
@@ -71,38 +71,107 @@ function parseContent(node: Node, type?: number): Message {
 
 const faultStorages: [string, number][] = []
 
+//b站怎么把数字全用图片显示啊，我还得转换
+//幸好没做混淆还是能直接拿到哎
+function parseNumber(root: HTMLDivElement){
+  const child = root.children as HTMLCollectionOf<HTMLSpanElement>
+  let result = 0
+  for (let i = 0; i < child.length; i++) {
+    const element = child[i]
+    result = +(/number-(\d+)/.exec(element.className)?.[1]??0) + result * 10
+  }
+  return result
+}
+
 function main() {
-  const giftsPrompt = document.getElementById("brush-prompt")!
   const config = { childList: true };
-  const callback: MutationCallback = function (mutationsList) {
+  //旧版处理底部礼物的数据 由于拒绝数据去重暂时注释掉
+  // const giftsPrompt = document.getElementById("brush-prompt")!
+  // const callback: MutationCallback = function (mutationsList) {
+  //   for (const mutation of mutationsList) {
+  //     if (mutation.type === "childList") {
+  //       for (const node of Array.from(mutation.addedNodes)) {  // 将 NodeList 转换为数组
+  //         if (node.nodeType !== Node.ELEMENT_NODE) { fault([node.nodeName + node.nodeType, -1]); continue }
+  //         if (!(node instanceof HTMLElement)) { fault([node.nodeName + node.nodeType, -1]); continue }
+  //         const texts = node.innerText.split("\n")
+  //         if (texts.length === 2 || texts.length === 4 && (texts[3] === "光临直播间" || texts[3] === "进入直播间" || texts[3] === "为主播点赞了")) {
+  //           continue
+  //         }
+  //         if (/combo/.test((node.firstChild as HTMLElement).className)) continue// 没有用户信息我很难办啊！
+  //         if (texts.length === 1 || texts[1] !== "投喂" || texts.length > 4) {
+  //           fault([node.innerHTML, 1])
+  //           continue
+  //         }
+  //         const gift: Gift = {
+  //           type: "gift",
+  //           gift: texts[2],
+  //           userName: texts[0],
+  //           giftCount: +(/\d+/.exec(texts[3])?.[0] ?? 0),
+  //         }
+  //         sendMsg(gift)
+  //       }
+  //     }
+  //   }
+  // };
+  // const observer = new MutationObserver(callback)
+  // observer.observe(giftsPrompt, config);
+  const gift = document.getElementById("chat-gift-bubble-vm")!.firstChild!.firstChild!
+  const giftCallback: MutationCallback = function (mutationsList) {
     for (const mutation of mutationsList) {
       if (mutation.type === "childList") {
-        for (const node of Array.from(mutation.addedNodes)) {  // 将 NodeList 转换为数组
-          if (node.nodeType !== Node.ELEMENT_NODE) { fault([node.nodeName + node.nodeType, -1]); continue }
-          if (!(node instanceof HTMLElement)) { fault([node.nodeName + node.nodeType, -1]); continue }
-          const texts = node.innerText.split("\n")
-          if (texts.length === 2 || texts.length === 4 && (texts[3] === "光临直播间" || texts[3] === "进入直播间" || texts[3] === "为主播点赞了")) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof HTMLDivElement) || !(/gift-bubbles/.test(node.className))) {
+            fault([(node as HTMLElement).outerHTML + node.nodeType, -4])
             continue
           }
-          if (/combo/.test((node.firstChild as HTMLElement).className)) continue// 没有用户信息我很难办啊！
-          if (texts.length === 1 || texts[1] !== "投喂" || texts.length > 4) {
-            fault([node.innerHTML, 1])
+          if (node.children.length !== 2 || node.children[1].children.length !== 1 || node.children[1].children[0].children.length !== 3) {
+            if (node.style.display === "none") continue
+            fault([node.outerHTML, -5])
             continue
           }
-          const gift: Gift = {
-            type: "gift",
-            gift: texts[2],
-            userName: texts[0],
-            giftCount: +(/\d+/.exec(texts[3])?.[0] ?? 1),
+          const bubbleNode = node.children[1].children[0]
+          if(/super-gift-item/.test(bubbleNode.className)){
+            const nameNode = bubbleNode.children[1]
+            const countNode = bubbleNode.children[2]
+            if(nameNode && countNode && /gift-info/.test(nameNode.className) && /gift-pic-count/.test(countNode.className) && (nameNode.children.length === 2 || nameNode.children.length === 4 && (nameNode.children[2] as HTMLSpanElement).innerText === "爆出")){
+              const userName = (nameNode.children[0].children[0] as HTMLDivElement).innerText
+              const giftName = (nameNode.children[1] as HTMLSpanElement).innerText
+              const giftNumNode = Array.from(countNode.children as HTMLCollectionOf<HTMLDivElement>).find(node => /count-amount.*p-absolute/.test(node.className))
+              const giftNum = giftNumNode ? parseNumber(giftNumNode) : 1
+              const giftComboNode = Array.from(countNode.children as HTMLCollectionOf<HTMLDivElement>).find(node => /count-amount/.test(node.className) && !/p-absolute/.test(node.className))
+              const giftCombo = giftComboNode ? parseNumber(giftComboNode) : 1
+              const count = giftNum * giftCombo
+              if(nameNode.children.length === 4){
+                const gift = nameNode.children[3] as HTMLSpanElement
+                const data:GiftBox = {
+                  type: 'giftBox',
+                  boxName: giftName,
+                  userName: userName,
+                  giftName: gift.innerText,
+                  giftCount: count,
+                }
+                sendMsg(data)
+                continue
+              }
+              const data:ComboGifts = {
+                type: 'giftCombo',
+                userName: userName,
+                giftName,
+                count: count
+              }
+              sendMsg(data)
+              continue
+            }
           }
-          sendMsg(gift)
+          fault([node.outerHTML, -6])
+          continue
         }
+
       }
     }
   };
-  const observer = new MutationObserver(callback)
-  observer.observe(giftsPrompt, config);
-
+  const giftObserver = new MutationObserver(giftCallback);
+  giftObserver.observe(gift, { childList: true });
 
 
   const danmu = document.getElementById("chat-items")!
@@ -110,12 +179,12 @@ function main() {
     for (const mutation of mutationsList) {
       if (mutation.type === "childList") {
         for (const node of Array.from(mutation.addedNodes)) {  // 将 NodeList 转换为数组
-          if (node.nodeType !== Node.ELEMENT_NODE) { fault([(node as HTMLElement).outerHTML + (node as HTMLElement).innerHTML + node.nodeType, -1]); continue }
-          if (!(node instanceof HTMLElement)) { fault([(node as HTMLElement).outerHTML + (node as HTMLElement).innerHTML + node.nodeType, -1]); continue }
+          if (node.nodeType !== Node.ELEMENT_NODE) { fault([(node as HTMLElement).outerHTML + node.nodeType, -1]); continue }
+          if (!(node instanceof HTMLElement)) { fault([(node as HTMLElement).outerHTML + node.nodeType, -1]); continue }
           if (/superChat/.test(node.className)) {
             const child = node.children as HTMLCollectionOf<HTMLDivElement>;
             const price = +/(\d+)/.exec(child[0].innerText)![0] / 10;
-            const uname = child[1].innerText;
+            const uname = (child[1].children[0].children[1] as HTMLDivElement).innerText;
             const text = child[2].innerText;
             const data: SuperChat = {
               type: 'superChat',
@@ -126,8 +195,8 @@ function main() {
             sendMsg(data)
             continue
           }
-          if(/恭喜用户.*荣耀等级/.test(node.innerText)) continue
-          if(node.children.length === 1 && node.childNodes.length === 2 && node.childNodes[1].nodeType === Node.TEXT_NODE && /开通了舰长/.test(node.childNodes[1].textContent??'')){
+          if (/恭喜用户.*荣耀等级/.test(node.innerText)) continue
+          if (node.children.length === 1 && node.childNodes.length === 2 && node.childNodes[1].nodeType === Node.TEXT_NODE && /开通了舰长/.test(node.childNodes[1].textContent ?? '')) {
             const name = (node.children[0] as HTMLDivElement).innerText
             sendMsg({
               type: 'captain',
@@ -146,7 +215,7 @@ function main() {
             if (arr.find(node => node.innerText === '爆出')) {
               const count = arr.find(node => /gift-num/.test(node.className))!
               if (!count.innerText || arr.find(node => /count/.test(node.className))!.innerText !== '') {
-                fault([node.innerHTML, -3])
+                fault([node.outerHTML, -3])
                 continue
               }
               const box = arr[actionIndex + 1].innerText
@@ -161,41 +230,25 @@ function main() {
               sendMsg(data)
               continue
             }
-            const giftName = arr.find(node => /gift-name/.test(node.className) && node.innerText !== 'TA冠名的礼物') as HTMLSpanElement
-            const fans = fansMedal?.innerText?.split('\n') ?? []
-            const medalName = fans[0]
-            const fansLevel = +fans[1]
-            const gift = giftName.innerText
-            const user = username.innerText
-            const count = arr.find(node => /gift-count/.test(node.className) && node.innerText.length > 1)
-            const num = arr.find(node => /gift-num/.test(node.className) && node.innerText.length > 1)
-            const c = +(/\d+/.exec(count?.innerText??'')??1) * +(/\d+/.exec(num?.innerText??'')??1)
-            if (count) {
-              
-              const data: ComboGifts = {
-                type: 'giftCombo',
-                userName: user,
-                giftName: gift,
-                count: c
-              }
-              if (fansMedal) {
-                data.fansMedal = {
-                  name: medalName,
-                  level: fansLevel
-                }
-              }
-              sendMsg(data)
+            if (arr.find(node => /gift-count/.test(node.className) && node.innerText.length > 1)) {
               continue
             }
             const totalCount = arr.find(node => /gift-total-count/.test(node.className))!
+            const giftName = arr.find(node => /gift-name/.test(node.className) && node.innerText !== 'TA冠名的礼物') as HTMLSpanElement
+            const num = arr.find(node => /gift-num/.test(node.className) && node.innerText.length > 1)
 
             if (!giftName || !username || !action || !(action instanceof HTMLElement) || !/投喂/.test(action.innerText)
               || !totalCount
               // || (!count && !totalCount)
             ) {
-              fault([node.innerHTML, -2]);
+              fault([node.outerHTML, -2]);
               continue
             }
+            const fans = fansMedal?.innerText?.split('\n') ?? []
+            const medalName = fans[0]
+            const fansLevel = +fans[1]
+            const gift = giftName.innerText
+            const user = username.innerText
             const Count = +(/\d+/.exec(totalCount.innerText) ?? 1)
             const data: ComboGifts = {
               type: 'giftCombo',
@@ -236,7 +289,7 @@ function main() {
               }
               break
             default:
-              fault([node.innerHTML, 4])
+              fault([node.outerHTML, 4])
           }
           sendMsg(danmu)
           continue
