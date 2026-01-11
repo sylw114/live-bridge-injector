@@ -167,14 +167,16 @@ function main() {
             const fansLevel = +fans[1]
             const gift = giftName.innerText
             const user = username.innerText
-            const c = arr.find(node => /(gift-count|gift-num)/.test(node.className) && node.innerText.length > 1)
-            if (c) {
+            const count = arr.find(node => /gift-count/.test(node.className) && node.innerText.length > 1)
+            const num = arr.find(node => /gift-num/.test(node.className) && node.innerText.length > 1)
+            const c = +(/\d+/.exec(count?.innerText??'')??1) * +(/\d+/.exec(num?.innerText??'')??1)
+            if (count) {
               
               const data: ComboGifts = {
                 type: 'giftCombo',
                 userName: user,
                 giftName: gift,
-                count: +/\d+/.exec(c.innerText)!,
+                count: c
               }
               if (fansMedal) {
                 data.fansMedal = {
@@ -185,7 +187,6 @@ function main() {
               sendMsg(data)
               continue
             }
-            // const count = arr.find(node => /gift-count/.test(node.className))!
             const totalCount = arr.find(node => /gift-total-count/.test(node.className))!
 
             if (!giftName || !username || !action || !(action instanceof HTMLElement) || !/投喂/.test(action.innerText)
@@ -200,7 +201,7 @@ function main() {
               type: 'giftCombo',
               userName: user,
               giftName: gift,
-              totalCount: Count
+              totalCount: +(/\d+/.exec(num?.innerText??'')??1) *Count
             }
             if (fansMedal) {
               data.fansMedal = {
