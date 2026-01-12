@@ -4,6 +4,8 @@
 
 这是我的第一个勉强算功能完整的项目，可能结构上过于混乱了。目前还有很多问题需要慢慢解决，如果可以的话，可以通过chrome devTools添加代码段运行和调试下，确认没有什么数据处理的异常。
 
+如果你只是内网使用可以搭配[简易server](https://github.com/sylw114/live-bridge-server)和[前端](https://github.com/sylw114/live-bridge-web)
+
 ## 功能特性
 
 - **弹幕监控**：实时捕获用户发送的弹幕消息，包括文本和图片内容
